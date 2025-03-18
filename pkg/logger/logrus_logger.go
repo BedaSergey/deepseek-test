@@ -18,7 +18,7 @@ func NewLogrusLogger() *LogrusLogger {
 	if err != nil {
 		logger.Fatal("Ошибка при загрузке .env файла:", err)
 	}
-
+	logrus.SetLevel(logrus.InfoLevel)
 	file, err := os.OpenFile(os.Getenv("LOG_DIR"), os.O_RDWR, 0666)
 	if err != nil {
 		logrus.Fatal("Не удалось открыть файл для логирования:", err)

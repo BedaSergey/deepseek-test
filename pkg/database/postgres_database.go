@@ -11,25 +11,24 @@ import (
 
 type PostgresDatabase struct {
 	Conn   *pgx.Conn
-	logger *logger.LogrusLogger
+	logger logger.Logger
 }
 
-func NewPostgresDatabase(logger *logger.LogrusLogger) *PostgresDatabase {
-	err := godotenv.Load()
-	if err != nil {
-		logger.Error("Ошибка при загрузке .env файла:", err)
+func NewPostgresDatabase(logger logger.Logger) *PostgresDatabase {
+	if err := godotenv.Load(); err != nil {
+		logger.Info(".env file not found, using environment variables")
 	}
 
 	logger.Info("Соединяемся с NewPostgresDatabase")
 	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_URL"))
 	if err != nil {
-		logger.Error("Unable to connect to database:", err)
+		logger.Info("Unable to connect to database:", err)
 		os.Exit(1)
 	}
 
 	err = conn.Ping(context.Background())
 	if err != nil {
-		logger.Error("Ошибка выполнения функции -conn.Ping-", err)
+		logger.Info("Ошибка выполнения функции -conn.Ping-", err)
 	}
 
 	return &PostgresDatabase{Conn: conn, logger: logger}
@@ -42,4 +41,20 @@ func (db *PostgresDatabase) PingConnection() error {
 		return err
 	}
 	return nil
+}
+
+func (db *PostgresDatabase) Close() error {
+	return db.Conn.Close(context.Background())
+}
+
+func (db *PostgresDatabase) Exec(ctx context.Context, query string, args ...interface{}) (int64, error) {
+	result, err := db.Conn.Exec(ctx, query, args...)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+func (db *PostgresDatabase) QueryRow(ctx context.Context, query string, args ...interface{}) Row {
+	return db.Conn.QueryRow(ctx, query, args...)
 }
